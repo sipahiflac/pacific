@@ -447,7 +447,7 @@ def main():
     st.markdown(f'<p style="color: #8b9bd3; font-size: 0.9rem; margin-top: -10px;">{current_header["subtitle"]}</p>', unsafe_allow_html=True)
     st.markdown("---")
 
-    data_dir = 'd:/VibeCoding/DataVisual/Datas'
+    data_dir = os.path.join(os.path.dirname(__file__), 'Datas')
     profiles = load_all_data(data_dir)
 
     if not profiles:
