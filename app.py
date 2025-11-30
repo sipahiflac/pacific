@@ -267,11 +267,27 @@ st.markdown("""
         background-color: rgba(255, 255, 255, 0.15) !important;
     }
 
+    /* Sidebar Selectbox Dropdown - Force downwards */
+    section[data-testid="stSidebar"] div[data-baseweb="popover"] {
+        top: 100% !important;
+        bottom: auto !important;
+        transform: none !important;
+        background-color: #1b2838 !important;
+        border: 1px solid #2a475e !important;
+    }
 
-    
+    section[data-testid="stSidebar"] div[data-baseweb="menu"] {
+        background-color: #1b2838 !important;
+        margin-top: 0px !important;
+    }
 
-    section[data-testid="stSidebar"] .stButton button[kind="primary"]:hover {
-        background-color: rgba(255, 255, 255, 0.15) !important;
+    section[data-testid="stSidebar"] li[data-baseweb="option"] {
+        color: #c7d5e0 !important;
+    }
+
+    section[data-testid="stSidebar"] li[data-baseweb="option"]:hover,
+    section[data-testid="stSidebar"] li[data-baseweb="option"][aria-selected="true"] {
+        background-color: #2a475e !important;
     }
 
     /* Responsive Chart Height */
