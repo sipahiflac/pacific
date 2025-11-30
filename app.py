@@ -291,6 +291,12 @@ st.markdown("""
         }
     }
 
+div[data-testid="stAlert"] {
+    background-color: #020405 !important;
+    text-align: center !important;
+    
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -311,6 +317,158 @@ def load_svg(filename):
             return f.read()
     except Exception as e:
         return f"<!-- Icon not found: {filename} -->"
+
+@st.cache_data
+def load_svg_content(filename):
+    try:
+        icon_path = os.path.join(os.path.dirname(__file__), 'icons', filename)
+        with open(icon_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception:
+        return ""
+
+def render_auth_modal():
+    # Custom CSS for the Modal and Backdrop
+    st.markdown("""
+    <style>
+        /* Target the container holding the auth modal */
+        div[data-testid="stVerticalBlock"]:has(.auth-marker) {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999999; /* Very high z-index */
+            background-color: #1b2838 !important; /* Solid background */
+            border: 1px solid #2a475e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            width: 360px;
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            opacity: 1 !important; /* Force opacity */
+        }
+
+        /* Backdrop Overlay */
+        div[data-testid="stVerticalBlock"]:has(.auth-marker)::before {
+            content: "";
+            position: fixed;
+            top: -5000px;
+            left: -5000px;
+            width: 10000px;
+            height: 10000px;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(30px); 
+            -webkit-backdrop-filter: blur(15px);
+            z-index: -1;
+            cursor: not-allowed;
+        }
+        
+        /* Close Button Styling */
+        div[data-testid="stVerticalBlock"]:has(.auth-marker) button[kind="secondary"] {
+            position: absolute !important;
+            top: 15px !important;
+            right: 15px !important;
+            background: transparent !important;
+            border: none !important;
+            color: #8b9bd3 !important;
+            font-size: 1.5rem !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            height: 30px !important;
+            width: 30px !important;
+            line-height: 1 !important;
+            box-shadow: none !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(.auth-marker) button[kind="secondary"]:hover {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(.auth-marker) button[kind="secondary"]:active {
+            color: #ffffff !important;
+            background: transparent !important;
+        }
+
+        /* Input Styling inside Modal */
+        div[data-testid="stVerticalBlock"]:has(.auth-marker) input {
+            background-color: #101822 !important;
+            border: 1px solid #2a475e !important;
+            color: white !important;
+            opacity: 1 !important;
+        }
+        
+        /* Icon Styling */
+        .auth-icon {
+            width: 48px;
+            height: 48px;
+            margin: 10px auto 10px auto;
+            display: block;
+            fill: #66c0f4;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    with st.container():
+        # Marker for CSS targeting
+        st.markdown('<div class="auth-marker"></div>', unsafe_allow_html=True)
+        
+        # Close Button (X) - Using secondary button style which we overrode in CSS
+        if st.button("✕", key="close_auth_btn", type="secondary"):
+            st.session_state.auth_active = False
+            st.session_state.pending_action = None
+            st.session_state.pending_target = None
+            
+            # Revert logic
+            restricted_pages = [">Tüm Gönderiler", ">Belediye Başkanları", ">YZ Aksiyonları"]
+            if st.session_state.page in restricted_pages:
+                st.session_state.page = ">Rapor"
+            
+            # If profile change was pending, we already reverted the selector in the on_change, 
+            # so we just need to rerun to clear the modal.
+            st.rerun()
+
+        # Icon
+        locked_icon = load_svg_content("locked.svg")
+        if locked_icon:
+            st.markdown(f'<div class="auth-icon">{locked_icon}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown("🔒", unsafe_allow_html=True) # Fallback
+
+        st.markdown(
+            "<p style='text-align: center; color: #c7d5e0; font-size: 0.9rem; margin-bottom: 10px;'>"
+            "Lütfen verilerin analizine erişmek için size verilen şifreyi girin:"
+            "</p>", 
+            unsafe_allow_html=True
+        )
+        
+        password = st.text_input("Şifre", type="default", key="auth_pass_input", label_visibility="hidden", placeholder="Şifre")
+        
+        if st.button("Giriş Yap", type="primary", use_container_width=True):
+            if password == "pacific2025":
+                st.session_state.authenticated = True
+                st.session_state.auth_active = False
+                
+                # Execute Pending Actions
+                if st.session_state.get('pending_action') == 'nav':
+                    st.session_state.page = st.session_state.pending_target
+                elif st.session_state.get('pending_action') == 'profile':
+                    st.session_state.last_profile = st.session_state.pending_target
+                    
+                # Clear pending
+                st.session_state.pending_action = None
+                st.session_state.pending_target = None
+                st.rerun()
+            else:
+                st.error("Hatalı şifre!")
+        
+        st.markdown(
+            "<div style='text-align: center; margin-top: 10px; font-size: 0.75rem; color: #8b9bd3;'>"
+            "Daha fazlası için: pacificturkiye@gmail.com"
+            "</div>", 
+            unsafe_allow_html=True
+        )
 
 def process_captions_for_wordcloud(df):
     """Extract and process captions to get top 10 words"""
@@ -496,9 +654,20 @@ def load_all_data(data_dir):
 
 def main():
     # --- Sidebar & Navigation State ---
+    # --- Sidebar & Navigation State ---
     if 'page' not in st.session_state:
         st.session_state.page = ">Rapor"
     
+    if 'authenticated' not in st.session_state:
+        st.session_state.authenticated = False
+        
+    if 'auth_active' not in st.session_state:
+        st.session_state.auth_active = False
+
+    # Render Auth Modal if active (This sits on top of everything)
+    if st.session_state.auth_active:
+        render_auth_modal()
+
     page = st.session_state.page
 
     # --- Dynamic Header ---
@@ -576,6 +745,7 @@ def main():
 
     # Custom Navigation Buttons
     nav_options = [">Rapor", ">Tüm Gönderiler", ">Belediye Başkanları", ">YZ Aksiyonları"]
+    restricted_pages = [">Tüm Gönderiler", ">Belediye Başkanları", ">YZ Aksiyonları"]
     
     st.sidebar.markdown("""
     <style>
@@ -593,15 +763,62 @@ def main():
         btn_type = "primary" if is_active else "secondary"
         
         if st.sidebar.button(option, key=f"nav_{option}", type=btn_type, use_container_width=True):
-            st.session_state.page = option
-            st.rerun()
+            if option in restricted_pages and not st.session_state.authenticated:
+                st.session_state.auth_active = True
+                st.session_state.pending_action = 'nav'
+                st.session_state.pending_target = option
+                st.rerun()
+            else:
+                st.session_state.page = option
+                st.rerun()
     
     st.sidebar.markdown("---")
     
     profile_names = list(profiles.keys())
     
     # Default to first profile if available
-    selected_profile_name = st.sidebar.selectbox("Profil Seç", options=profile_names)
+    if 'last_profile' not in st.session_state and profile_names:
+        st.session_state.last_profile = profile_names[0]
+
+    # Determine index safely
+    try:
+        # Use pending_profile if we are in the middle of an auth flow for profile change?
+        # No, the selectbox needs to show the CURRENT active profile until auth is success.
+        default_index = profile_names.index(st.session_state.last_profile)
+    except ValueError:
+        default_index = 0
+
+    # We need to detect change. 
+    # If we use key='selected_profile', we can check st.session_state.selected_profile
+    # But if we want to intercept, we might need a callback or check after render.
+    
+    def on_profile_change():
+        new_profile = st.session_state.profile_selector
+        if new_profile != st.session_state.last_profile:
+            if not st.session_state.authenticated:
+                st.session_state.auth_active = True
+                st.session_state.pending_action = 'profile'
+                st.session_state.pending_target = new_profile
+                # Revert the selection in session state so the UI doesn't jump
+                st.session_state.profile_selector = st.session_state.last_profile
+            else:
+                st.session_state.last_profile = new_profile
+
+    selected_profile_name = st.sidebar.selectbox(
+        "Profil Seç", 
+        options=profile_names, 
+        index=default_index,
+        key="profile_selector",
+        on_change=on_profile_change
+    )
+    
+    # If auth is active for profile change, we might want to override the `selected_profile_name` 
+    # to be the `last_profile` (the old one) so the UI doesn't update yet.
+    if st.session_state.auth_active and st.session_state.get('pending_action') == 'profile':
+        selected_profile_name = st.session_state.last_profile
+
+    
+    compare_mode = False
     
     compare_mode = False
     comparison_profile_name = None
@@ -834,9 +1051,13 @@ def main():
                     # Calculate Moving Average (3-day window)
                     df_daily['MA'] = df_daily['Beğeni Sayısı'].rolling(window=3, min_periods=1).mean()
                     
+                    # Round values with NaN handling
+                    df_daily['Beğeni Sayısı'] = df_daily['Beğeni Sayısı'].fillna(0).round().astype(int)
+                    df_daily['MA'] = df_daily['MA'].fillna(0).round().astype(int)
+
                     # Use Datetime for X-axis to fix sorting/comparison issues
                     fig_line = px.line(df_daily, x='Tarih', y='Beğeni Sayısı', markers=True, template="plotly_dark", line_shape='linear')
-                    fig_line.update_xaxes(showticklabels=False)
+                    fig_line.update_xaxes(showticklabels=True) # Enable tick labels to see Turkish date
                     fig_line.update_traces(line_color='#66c0f4', line_width=2.5, name=selected_profile_name)
                     
                     # Comparison Logic
@@ -847,8 +1068,21 @@ def main():
                         comp_daily = comp_daily.sort_values('Tarih') # Ensure sorted
                         
                         comp_daily['MA'] = comp_daily['Beğeni Sayısı'].rolling(window=3, min_periods=1).mean()
+                        comp_daily['MA'] = comp_daily['MA'].fillna(0).round().astype(int)
                         
                         fig_line.add_scatter(x=comp_daily['Tarih'], y=comp_daily['MA'], mode='lines+markers', name=comparison_profile_name, line=dict(color='#a3cf06', width=1, shape='linear'))
+
+                    # Turkish Month Map for Hover Data and Ticks
+                    month_map_js = {
+                        1: 'Ocak', 2: 'Şubat', 3: 'Mart', 4: 'Nisan', 5: 'Mayıs', 6: 'Haziran',
+                        7: 'Temmuz', 8: 'Ağustos', 9: 'Eylül', 10: 'Ekim', 11: 'Kasım', 12: 'Aralık'
+                    }
+                    
+                    # We can't easily inject JS into Plotly for date formatting, so we use d3 format strings or rely on locale. 
+                    # However, locale setting in Python doesn't always transfer to JS client side Plotly.
+                    # Best approach for specific "Turkish" dates on axis is to use tickformat.
+                    # Plotly uses d3-time-format. Locale support is limited without full JS config.
+                    # We will try to map standard formats.
 
                     fig_line.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', 
@@ -856,30 +1090,58 @@ def main():
                         xaxis_title="Tarih",
                         legend_title_text='Profil',
                         xaxis=dict(
-                            tickformat="%d %b", # Format: 22 Oct
-                            dtick="D1", # Daily ticks if zoomed in, or auto
-                            fixedrange=True
+                            tickformat="%d %b", # e.g. 21 Nov
+                            # We can try to force locale via config but Streamlit wrapper limits this.
                         ),
                         yaxis=dict(fixedrange=True),
                         autosize=True,
                         margin=dict(l=0, r=0, t=30, b=0)
                     )
-                    st.plotly_chart(fig_line, use_container_width=True, config={'responsive': True})
+                    
+                    # NOTE: Fully localizing Plotly axis labels to Turkish ("Oca", "Şub") usually requires
+                    # setting config locale to 'tr' which might need extra JS or st.plotly_chart kwargs.
+                    # For now, we will use standard numeric or english abbreviations, or we can pre-format a string column.
+                    
+                    # Attempt to set locale in config
+                    st.plotly_chart(fig_line, use_container_width=True, config={'responsive': True, 'locale': 'tr'})
 
                 with tab_format:
                     st.subheader("Format Analizi")
                     avg_likes_type = df.groupby('Tür')['Beğeni Sayısı'].mean().reset_index()
+                    
+                    # Round to integer with NaN handling
+                    avg_likes_type['Beğeni Sayısı'] = avg_likes_type['Beğeni Sayısı'].fillna(0).round().astype(int)
+                    
                     # Valve Theme Colors (Updated)
                     colors = ['#66c0f4', '#d2f0a9', '#35a69e', '#c7d5e0']
-                    fig_pie = px.pie(avg_likes_type, values='Beğeni Sayısı', names='Tür', hole=0.4, template="plotly_dark", color_discrete_sequence=colors)
-                    fig_pie.update_layout(
+                    
+                    # Changed from Pie to Bar
+                    fig_bar = px.bar(
+                        avg_likes_type, 
+                        y='Tür', 
+                        x='Beğeni Sayısı', 
+                        text='Beğeni Sayısı',
+                        template="plotly_dark",
+                        color='Tür',
+                        color_discrete_sequence=colors,
+                        orientation='h'
+                    
+                    )
+                    
+                    fig_bar.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', 
                         paper_bgcolor='rgba(0,0,0,0)',
                         autosize=True,
                         margin=dict(l=0, r=0, t=30, b=0),
+                        yaxis_title="Format Türü",
+                        xaxis_title="Ortalama Beğeni",
+                        showlegend=False,
                         height=400,
+                    
                     )
-                    st.plotly_chart(fig_pie, use_container_width=False, config={'responsive': False})
+                    fig_bar.update_traces(textposition='outside')
+                    
+                    st.plotly_chart(fig_bar, use_container_width=True, config={'responsive': False})
                     
                     # Insight
                     if not avg_likes_type.empty:
@@ -911,7 +1173,11 @@ def main():
                 with tab_daily:
                     st.subheader("Gün Bazlı Etkileşim")
                     avg_likes_day = df.groupby('Gün', observed=True)['Beğeni Sayısı'].mean().reset_index()
-                    fig_bar_day = px.bar(avg_likes_day, x='Gün', y='Beğeni Sayısı', template="plotly_dark", color='Beğeni Sayısı', color_continuous_scale='Bluyl')
+                    
+                    # Round to integer with NaN handling
+                    avg_likes_day['Beğeni Sayısı'] = avg_likes_day['Beğeni Sayısı'].fillna(0).round().astype(int)
+                    
+                    fig_bar_day = px.bar(avg_likes_day, x='Gün', y='Beğeni Sayısı', template="plotly_dark", color='Beğeni Sayısı', color_continuous_scale='Bluyl', text='Beğeni Sayısı')
                     fig_bar_day.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', 
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -919,9 +1185,8 @@ def main():
                         yaxis=dict(fixedrange=True),
                         coloraxis_showscale=False,
                         autosize=True,
-                     
-                        
                     )
+                    fig_bar_day.update_traces(textposition='outside')
 
                     fig_bar_day.update_xaxes(
                        automargin=True
@@ -947,8 +1212,11 @@ def main():
                     # Explicitly convert to string for Plotly to avoid any date inference
                     avg_likes_hour['Saat Aralığı'] = avg_likes_hour['Saat Aralığı'].astype(str)
                     
+                    # Round to integer with NaN handling
+                    avg_likes_hour['Beğeni Sayısı'] = avg_likes_hour['Beğeni Sayısı'].fillna(0).round().astype(int)
+                    
                     # Updated Color Palette
-                    fig_bar_hour = px.bar(avg_likes_hour, x='Saat Aralığı', y='Beğeni Sayısı', template="plotly_dark", color='Beğeni Sayısı', color_continuous_scale='Bluyl')
+                    fig_bar_hour = px.bar(avg_likes_hour, x='Saat Aralığı', y='Beğeni Sayısı', template="plotly_dark", color='Beğeni Sayısı', color_continuous_scale='Bluyl', text='Beğeni Sayısı')
                     
                     fig_bar_hour.update_xaxes(
                         scaleanchor='y',
@@ -968,8 +1236,10 @@ def main():
                         margin=dict(l=0, r=0, t=0, b=100),
 
                     )
+                    fig_bar_hour.update_traces(textposition='outside')
                     
                     st.plotly_chart(fig_bar_hour, use_container_width=True, config={'responsive': True,})
+
                     
                     # Insight
                     
