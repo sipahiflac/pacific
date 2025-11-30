@@ -9,10 +9,14 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 # --- Page Configuration ---
+logo2_path = os.path.join(os.path.dirname(__file__), 'icons', 'logo2.png')
+
+
 st.set_page_config(
-    page_title="Çipura",
-    page_icon="📊",
+    page_title="Pacific Türkiye",
+    page_icon=logo2_path,
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -72,16 +76,26 @@ st.markdown("""
         height: 100%;
         display: flex;
         flex-direction: column;
+        text-decoration: none !important;
     }
     
-    /* Image Styling - Strict Aspect Ratio */
+    /* Image Styling - Strict Aspect Ratio with Ghost Loading */
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+    }
+
     .post-image-container {
         width: 100%;
         padding-top: 100%; /* 1:1 Aspect Ratio */
         position: relative;
         overflow: hidden;
         border-radius: 4px;
-        background-color: #000;
+        background-color: #171a21;
+        background-image: linear-gradient(to right, #171a21 4%, #2a475e 25%, #171a21 36%);
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite linear;
+        text-decoration: none !important;
     }
     
     .post-image-container img {
@@ -91,6 +105,24 @@ st.markdown("""
         width: 100%;
         height: 100%;
         object-fit: cover;
+        z-index: 1; /* Ensure image is above the shimmer background */
+        text-decoration: none !important;
+    }
+    
+    /* City Tag Styling */
+    .city-tag {
+        background-color: #101822;
+        color: #66c0f4;
+        padding: 1px 5px;
+        border-radius: 2px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border: 1px solid   #2a475e; 
+        margin-left: -16px;
+        display: inline-block;
+        margin-top: 6px;
+
+
     }
     
     /* Stats Text */
@@ -128,10 +160,25 @@ st.markdown("""
 
     /* Clickable Post Card */
     .post-card-link {
-        text-decoration: none;
-        color: inherit;
+        text-decoration: none !important;
+        color: inherit !important;
         display: block;
-        border-bottom: none !important; s
+        border-bottom: none !important; 
+    }
+    
+    .post-card-link:hover, 
+    .post-card-link:focus, 
+    .post-card-link:active, 
+    .post-card-link:visited {
+        text-decoration: none !important;
+        border-bottom: none !important;
+        color: inherit !important;
+    }
+    
+    /* Force remove underline from all children */
+    .post-card-link * {
+        text-decoration: none !important;
+        border-bottom: none !important;
     }
     
 
@@ -223,6 +270,27 @@ st.markdown("""
 
     
 
+    section[data-testid="stSidebar"] .stButton button[kind="primary"]:hover {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    /* Responsive Chart Height */
+    @media (max-width: 768px) {
+        .js-plotly-plot {
+            min-height: 200px !important;
+        }
+    }
+    @media (min-width: 769px) {
+        .js-plotly-plot {
+            min-height: 500px !important;
+           
+        }
+        .js-plotly-plot .plotly .main-svg {
+            height: 100% !important;
+               width: 100% !important;
+        }
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -234,6 +302,15 @@ def get_img_as_base64(file_path):
         return base64.b64encode(data).decode()
     except Exception:
         return None
+
+def load_svg(filename):
+    """Load SVG content from icons directory"""
+    try:
+        icon_path = os.path.join(os.path.dirname(__file__), 'icons', filename)
+        with open(icon_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        return f"<!-- Icon not found: {filename} -->"
 
 def process_captions_for_wordcloud(df):
     """Extract and process captions to get top 10 words"""
@@ -492,9 +569,10 @@ def main():
             st.error(f"Error loading profile_tags.csv: {e}")
 
     # --- Sidebar ---
-    st.sidebar.title("Çipura")
+
     
-    # Icons removed as per request
+
+    st.sidebar.image("./icons/logo.png", width=100)
 
     # Custom Navigation Buttons
     nav_options = [">Rapor", ">Tüm Gönderiler", ">Belediye Başkanları", ">YZ Aksiyonları"]
@@ -577,7 +655,22 @@ def main():
             df = selected_data['main']
 
             # --- Header Info ---
-            st.subheader(f"{selected_profile_name}")
+            
+            city_tag_html = ""
+            if not tags_df.empty:
+                p_tags = tags_df[tags_df['Profil'] == selected_profile_name]
+                if not p_tags.empty:
+                     # Check Tag3 (City)
+                     if 'Tag3' in p_tags.columns and pd.notnull(p_tags.iloc[0]['Tag3']):
+                         city_name = p_tags.iloc[0]['Tag3']
+                         city_tag_html = f'<span class="city-tag">{city_name}</span>'
+            
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; padding: 0; color: white; font-weight: 300; font-size: 1.8rem;">{selected_profile_name}</h3>
+                {city_tag_html}
+            </div>
+            """, unsafe_allow_html=True)
             
             # Date Range
             if not df.empty:
@@ -701,9 +794,9 @@ def main():
                 with col:
                     st.markdown(f"""
                     <a href="{post_link}" target="_blank" class="post-card-link">
-                        <div class="post-container">
+                        <div class="post-container" data-profile="{selected_profile_name}">
                             <div class="post-image-container">
-                                <img src="{display_src}" alt="Top Post">
+                                <img src="{display_src}" alt="Top Post" loading="lazy">
                             </div>
                             <div class="post-stats">
                                 <span>❤️ {int(row['Beğeni Sayısı'])}</span>
@@ -731,7 +824,7 @@ def main():
                 tab_trend, tab_format, tab_wordcloud, tab_daily, tab_hourly  = st.tabs(["Beğeni Trendi", "Format Analizi", "Kelime Haritası", "Günlük Etkileşim", "Saatlik Etkileşim"])
                 
                 with tab_trend:
-                    st.subheader("Beğeni Trendi (Hareketli Ortalama)")
+                    st.subheader("Beğeni Trendi")
                     
                     # Group by Day and Calculate Mean
                     df_daily = df.groupby(df['Tarih'].dt.date)['Beğeni Sayısı'].mean().reset_index()
@@ -743,7 +836,8 @@ def main():
                     
                     # Use Datetime for X-axis to fix sorting/comparison issues
                     fig_line = px.line(df_daily, x='Tarih', y='Beğeni Sayısı', markers=True, template="plotly_dark", line_shape='linear')
-                    fig_line.update_traces(line_color='#66c0f4', line_width=1.5, name=selected_profile_name)
+                    fig_line.update_xaxes(showticklabels=False)
+                    fig_line.update_traces(line_color='#66c0f4', line_width=2.5, name=selected_profile_name)
                     
                     # Comparison Logic
                     if compare_mode and comparison_profile_name:
@@ -767,7 +861,6 @@ def main():
                             fixedrange=True
                         ),
                         yaxis=dict(fixedrange=True),
-                        height=400,
                         autosize=True,
                         margin=dict(l=0, r=0, t=30, b=0)
                     )
@@ -782,16 +875,16 @@ def main():
                     fig_pie.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', 
                         paper_bgcolor='rgba(0,0,0,0)',
-                        height=400,
                         autosize=True,
-                        margin=dict(l=0, r=0, t=30, b=0)
+                        margin=dict(l=0, r=0, t=30, b=0),
+                        height=400,
                     )
-                    st.plotly_chart(fig_pie, use_container_width=True, config={'responsive': True})
+                    st.plotly_chart(fig_pie, use_container_width=False, config={'responsive': False})
                     
                     # Insight
                     if not avg_likes_type.empty:
                         best_type = avg_likes_type.sort_values(by='Beğeni Sayısı', ascending=False).iloc[0]
-                        st.info(f"💡 Son 30 günde en çok etkileşimi **{best_type['Tür']}** türünde atılan gönderiler aldı.")
+                        #st.info(f"💡 Son 30 günde en çok etkileşimi **{best_type['Tür']}** türünde atılan gönderiler aldı.")
 
                 with tab_wordcloud:
                     st.subheader("Kelime Haritası")
@@ -824,11 +917,20 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)',
                         xaxis=dict(fixedrange=True),
                         yaxis=dict(fixedrange=True),
-                        height=400,
+                        coloraxis_showscale=False,
                         autosize=True,
-                        margin=dict(l=0, r=0, t=30, b=0)
+                     
+                        
+                    )
+
+                    fig_bar_day.update_xaxes(
+                       automargin=True
                     )
                     st.plotly_chart(fig_bar_day, use_container_width=True, config={'responsive': True})
+                    
+                    best_day = avg_likes_day.sort_values(by='Beğeni Sayısı', ascending=False).iloc[0]
+                    
+                    #st.info(f"💡 Son 30 günde en çok etkileşimi **{best_day['Gün']}** günü atılan gönderiler aldı.")
 
                 with tab_hourly:
                     st.subheader("Saat Bazlı Etkileşim (4 Saatlik)")
@@ -847,6 +949,13 @@ def main():
                     
                     # Updated Color Palette
                     fig_bar_hour = px.bar(avg_likes_hour, x='Saat Aralığı', y='Beğeni Sayısı', template="plotly_dark", color='Beğeni Sayısı', color_continuous_scale='Bluyl')
+                    
+                    fig_bar_hour.update_xaxes(
+                        scaleanchor='y',
+                        scaleratio=1,
+                        automargin=True
+                    )
+
                     fig_bar_hour.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', 
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -854,16 +963,19 @@ def main():
                         xaxis_type='category', # Force categorical axis
                         xaxis=dict(fixedrange=True),
                         yaxis=dict(fixedrange=True),
-                        height=400,
-                        autosize=True,
-                        margin=dict(l=0, r=0, t=30, b=0)
+                        coloraxis_showscale=False,
+                        
+                        margin=dict(l=0, r=0, t=0, b=100),
+
                     )
-                    st.plotly_chart(fig_bar_hour, use_container_width=True, config={'responsive': True})
+                    
+                    st.plotly_chart(fig_bar_hour, use_container_width=True, config={'responsive': True,})
                     
                     # Insight
+                    
                     best_hour = avg_likes_hour.sort_values(by='Beğeni Sayısı', ascending=False).iloc[0]
-                    if best_hour['Beğeni Sayısı'] > 0:
-                        st.info(f"💡 Son 30 günde en çok etkileşimi **{best_hour['Saat Aralığı']}** saatleri arasında atılan gönderiler aldı.")
+                    #if best_hour['Beğeni Sayısı'] > 0:
+                        #st.info(f"💡 Son 30 günde en çok etkileşimi **{best_hour['Saat Aralığı']}** saatleri arasında atılan gönderiler aldı.")
                 
         with col_rightmargin:
             st.markdown("") 
@@ -911,18 +1023,14 @@ def main():
         if all_posts:
             combined_df = pd.concat(all_posts, ignore_index=True)
             
-            # --- Calculate Access Score (Erişim Skoru) for Posts ---
-            median_interactions_post = combined_df['Toplam Etkileşim'].median()
-            if not median_interactions_post or median_interactions_post == 0:
-                median_interactions_post = 1
-            
+
             def calculate_post_score(row):
                 follower_val = row['Takipçiler'] if 'Takipçiler' in row and pd.notnull(row['Takipçiler']) else 0
                 interaction_val = row['Toplam Etkileşim'] if 'Toplam Etkileşim' in row and pd.notnull(row['Toplam Etkileşim']) else 0
                 
                 if follower_val > 0:
-                    # New Formula: (Interaction / Followers) * log10(Followers + 1)
-                    score = (interaction_val / follower_val) * np.log10(follower_val + 1)  * 10
+                    # New Formula: (Interaction / Follower^0.5) * 100
+                    score = (interaction_val / np.power(follower_val, 0.7)) * 100
                     return score
                 return 0
             
@@ -1090,7 +1198,7 @@ def main():
                     "Link": st.column_config.LinkColumn("Link"),
                     "Tarih": st.column_config.DateColumn("Tarih", format="DD.MM.YYYY"),
                     "Erişim Oranı": st.column_config.NumberColumn("Erişim Oranı", format="%.2f %%"),
-                    "Erişim Skoru": st.column_config.NumberColumn("Erişim Skoru", format="%.2f", help="(Toplam Etkileşim / Takipçi) * log10(Takipçi + 1)"),
+                    "Erişim Skoru": st.column_config.NumberColumn("Erişim Skoru", format="%.2f", help="(Toplam Etkileşim / Takipçi^0.5) * 100"),
                     "Tag1": st.column_config.TextColumn("Bölge"),
                     "Tag2": st.column_config.TextColumn("Statü"),
                     "Görüntülenme Sayısı": st.column_config.NumberColumn("Görüntülenme", format="%d"),
@@ -1105,7 +1213,7 @@ def main():
             )
             
             st.caption("**Erişim Oranı**: (Toplam Etkileşim / Takipçi Sayısı) * 100 formülü ile hesaplanmıştır.")
-            st.caption("**Erişim Skoru**: (Toplam Etkileşim / Takipçi Sayısı) * log10(Takipçi Sayısı + 1) formülü ile hesaplanmıştır.")
+            st.caption("**Toplam Etkileşim / (Takipçi Sayısı^{0.7}) formülü 100 ile ölçeklenerek hesaplanmıştır.**")
             
             # Limit Selection (Bottom Left)
             col_limit, col_empty = st.columns([1, 4])
@@ -1161,7 +1269,7 @@ def main():
             
             # Access Score (profile level)
             if follower_count > 0:
-                access_score = (current_interaction / follower_count) * np.log10(follower_count + 1)
+                access_score = (current_interaction / np.power(follower_count, 0.5))
             else:
                 access_score = 0 
             summary_data.append({
@@ -1200,7 +1308,7 @@ def main():
                     "Toplam Etkileşim": st.column_config.NumberColumn("Toplam Etkileşim", format="%d"),
                     "Ortalama Etkileşim": st.column_config.NumberColumn("Ortalama Etkileşim", format="%d"),
                     "Ortalama Erişim Oranı": st.column_config.NumberColumn("Ortalama Erişim Oranı", format="%.2f %%"),
-                    "Erişim Skoru": st.column_config.NumberColumn("Erişim Skoru", format="%.2f", help="(Toplam Etkileşim / Takipçi) * log10(Takipçi + 1)"),
+                    "Erişim Skoru": st.column_config.NumberColumn("Erişim Skoru", format="%.2f", help="(Toplam Etkileşim / Takipçi Sayısı}^(1/2))"),
                     "views_history": st.column_config.LineChartColumn(
                         "Beğeni Grafiği (Son 30 Gün)", y_min=0, y_max=5000
                     ),
@@ -1208,7 +1316,7 @@ def main():
                 use_container_width=True,
                 hide_index=True
             )
-            st.caption("**Erişim Skoru**: (Toplam Etkileşim / Takipçi Sayısı) * log10(Takipçi Sayısı + 1) formülü ile hesaplanmıştır.")
+            st.caption("**Erişim Skoru**: (Toplam Etkileşim / Takipçi Sayısı}^(1/2)) formülü ile hesaplanmıştır.")
 
     # --- AI Actions Page ---
     elif page == ">YZ Aksiyonları":
@@ -1218,81 +1326,150 @@ def main():
         <style>
             .insight-card {
                 background-color: #101822;
-                border: 1px solid #66c0f4;
-                border-radius: 10px;
-                padding: 25px;
-                height: 100%;
+                border: 1px solid #2a475e;
+                border-radius: 8px;
+                padding: 20px;
+                height: 280px; /* Fixed height for uniformity */
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                transition: transform 0.2s ease, border-color 0.2s ease;
+                position: relative;
+                overflow: hidden;
+                margin-bottom: 20px;
+            }
+            .insight-card:hover {
+                transform: translateY(-5px);
+                border-color: #66c0f4;
+                box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+            }
+            .insight-icon-container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 48px;
+                height: 48px;
+                background-color: rgba(102, 192, 244, 0.1);
+                border-radius: 8px;
+                margin-bottom: 15px;
+            }
+            .insight-icon svg {
+                width: 28px;
+                height: 28px;
+                fill: #66c0f4;
             }
             .insight-title {
                 color: #66c0f4;
-                font-size: 1.4rem;
+                font-size: 1.1rem;
                 font-weight: 600;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
                 letter-spacing: 0.5px;
             }
             .insight-text {
-                color: #e1e1e1;
-                font-size: 1.05rem;
-                line-height: 1.6;
+                color: #c7d5e0;
+                font-size: 0.95rem;
+                line-height: 1.5;
                 font-weight: 400;
+                flex-grow: 1; /* Push content to fill space */
             }
             .highlight {
                 color: #a3cf06;
                 font-weight: bold;
             }
+            .highlight-neg {
+                color: #ff4949;
+                font-weight: bold;
+            }
         </style>
         """, unsafe_allow_html=True)
 
-        col1, col2 = st.columns(2, gap="medium")
+        # --- Calculations for Dynamic Blocks ---
         
-        with col1:
-            st.markdown("""
-            <div class="insight-card">
-                <div class="insight-title">Altın Saat</div>
-                <div class="insight-text">
-                    Sabah (06-12.00) paylaşılan gönderiler, öğle (12-18.00) saatlerinde atılanlara göre 
-                    <span class="highlight">%71 daha fazla</span> beğeni (etkileşim puanı) topluyor.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # 1. Etkileşim Gücü (Interaction Power)
+        # Compare profile's avg interaction to global avg interaction
+        if selected_profile_name and selected_profile_name in profiles:
+            p_data = profiles[selected_profile_name]['main']
+            current_interaction = p_data['Toplam Etkileşim'].sum() if 'Toplam Etkileşim' in p_data.columns else 0
+            current_posts = len(p_data)
+            avg_interaction = current_interaction / current_posts if current_posts > 0 else 0
             
-            st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+            if global_avg_avg_interaction > 0:
+                interaction_power_diff = ((avg_interaction - global_avg_avg_interaction) / global_avg_avg_interaction) * 100
+            else:
+                interaction_power_diff = 0
+                
+            if interaction_power_diff >= 0:
+                int_power_text = f"Etkileşim Gücü ortalamadan <span class='highlight'>%{abs(interaction_power_diff):.1f} fazla</span>."
+            else:
+                int_power_text = f"Etkileşim Gücü ortalamadan <span class='highlight-neg'>%{abs(interaction_power_diff):.1f} az</span>."
+                
+            # 2. Sadık Kitle (Loyal Audience)
+            # Comments / Likes ratio
+            total_likes = p_data['Beğeni Sayısı'].sum() if 'Beğeni Sayısı' in p_data.columns else 0
+            total_comments = p_data['Yorum Sayısı'].sum() if 'Yorum Sayısı' in p_data.columns else 0
             
-            st.markdown("""
-            <div class="insight-card">
-                <div class="insight-title">Format Analizi</div>
-                <div class="insight-text">
-                    Reels videoların doğası gereği viral olma potansiyelinin yüksek olmasından dolayı, diğer içeriklerden 
-                    <span class="highlight">%124 daha fazla</span> beğeni alıyor.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            if total_likes > 0:
+                loyal_ratio = (total_comments / total_likes) * 100
+            else:
+                loyal_ratio = 0
+                
+            loyal_text = f"Her yüz beğeniye karşılık <span class='highlight'>%{loyal_ratio:.1f}</span> yorum alıyorsunuz."
+            
+        else:
+            int_power_text = "Veri yok."
+            loyal_text = "Veri yok."
 
-        with col2:
-            st.markdown("""
-            <div class="insight-card">
-                <div class="insight-title">Takvim Aksiyomu</div>
-                <div class="insight-text">
-                    Hafta sonu gönderileri, hafta içine göre yaklaşık 
-                    <span class="highlight">%41.4 daha fazla</span> beğeni alıyor.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        # --- Define Insights Data ---
+        insights = [
+            {
+                "title": "Altın Saat",
+                "icon": "timer-line.svg",
+                "text": "Sabah (06-12.00) paylaşılan gönderiler, öğle (12-18.00) saatlerinde atılanlara göre <span class='highlight'>%71 daha fazla</span> beğeni (etkileşim puanı) topluyor."
+            },
+            {
+                "title": "Format Analizi",
+                "icon": "film-line.svg",
+                "text": "Reels videoların doğası gereği viral olma potansiyelinin yüksek olmasından dolayı, diğer içeriklerden <span class='highlight'>%124 daha fazla</span> beğeni alıyor."
+            },
+            {
+                "title": "Takvim Aksiyomu",
+                "icon": "calendar-line.svg",
+                "text": "Hafta sonu gönderileri, hafta içine göre yaklaşık <span class='highlight'>%41.4 daha fazla</span> beğeni alıyor."
+            },
+            {
+                "title": "İstikrar Skoru",
+                "icon": "honour-line.svg",
+                "text": "Her gün aynı saatte gönderi atmak veya belirli aralıklarla gönderi atmak ile takipçilere ulaşmak arasında (-0.43 korelasyon) hafif bir korelasyon var."
+            },
+            {
+                "title": "Sadık Kitle",
+                "icon": "shake-hands-line.svg",
+                "text": loyal_text
+            },
+            {
+                "title": "Etkileşim Gücü",
+                "icon": "bar-chart-box-ai-line.svg",
+                "text": int_power_text
+            }
+        ]
 
-            st.markdown("""
-            <div class="insight-card">
-                <div class="insight-title">İstikrar</div>
-                <div class="insight-text">
-                    Her gün aynı saatte gönderi atmak veya belirli aralıklarla gönderi atmak ile takipçilere ulaşmak arasında 
-                    (-0.43 korelasyon) hafif bir korelasyon var. Yani "Bazen günde 5 post atıp, sonra 3 gün kaybolmak" iyi bir strateji değil.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # --- Render Grid (3 Columns) ---
+        rows = [insights[i:i+3] for i in range(0, len(insights), 3)]
+        
+        for row in rows:
+            cols = st.columns(3)
+            for i, card in enumerate(row):
+                with cols[i]:
+                    svg_content = load_svg(card['icon'])
+                    st.markdown(f"""
+                    <div class="insight-card">
+                        <div class="insight-icon-container">
+                            <div class="insight-icon">{svg_content}</div>
+                        </div>
+                        <div class="insight-title">{card['title']}</div>
+                        <div class="insight-text">{card['text']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
