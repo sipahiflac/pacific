@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polimetri</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #F3F5ED;
+            font-family: 'Inter', sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: white;
+            padding: 15px 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .navbar-logo-img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #555;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #000;
+        }
+
+        .user-icon-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin-left: -15px;
+            transition: background-color 0.2s;
+            margin-left: 15px;
+            text-decoration: none;
+        }
+
+        .user-icon-link:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 40px 20px;
+        }
+
+        /* Custom Combobox Styles */
+        .combobox-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .combobox-label {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 5px;
+            display: block;
+            margin-left: 10px;
+        }
+
+        .combobox-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.025);
+            cursor: text;
+            transition: border-color 0.2s;
+        }
+
+        .combobox-input-wrapper:focus-within {
+            border-color: #ff6b00;
+            box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.1);
+        }
+
+        .combobox-input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 1.1rem;
+            color: #333;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .combobox-badge {
+            background-color: #eebb22;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+
+        .combobox-chevron {
+            margin-left: 10px;
+            color: #999;
+            transition: transform 0.2s;
+        }
+
+        .combobox-chevron.open {
+            transform: rotate(180deg);
+        }
+
+        .combobox-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-height: 30vh;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            padding: 5px 0;
+        }
+
+        .combobox-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #333;
+            transition: background-color 0.1s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .combobox-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .combobox-item.selected {
+            background-color: #fff8f0;
+            color: #ff6b00;
+            font-weight: 500;
+        }
+
+        /* Scrollbar styling */
+        .combobox-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .combobox-dropdown::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .combobox-dropdown::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        .combobox-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+
+        /* KPI Cards */
+        .kpi-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.025);
+            height: 100%;
+            position: relative;
+        }
+
+        .kpi-title {
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .kpi-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 24px;
+            height: 24px;
+            opacity: 0.7;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 5px;
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .trend-up {
+            color: #70AB8B;
+            background-color: #F3F5ED;
+            padding: 2px 6px;
+            border-radius: 12px;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+
+        .trend-down {
+            color: #DEB71B;
+            background-color: #F3F5ED;
+            padding: 2px 6px;
+            border-radius: 12px;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+
+        .trend-period {
+            color: #999;
+            margin-left: 5px;
+            font-weight: 600;
+        }
+
+        /* Chart Cards */
+        .chart-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.025);
+            height: 100%;
+            min-height: 300px;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #ff6b00;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #333;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+        }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .mobile-logo-img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        /* Bottom Navigation Bar (Mobile) */
+        .bottom-nav {
+            display: none;
+            /* Hidden on desktop */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            padding: 10px 0;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1001;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+        }
+
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #999;
+            font-size: 0.75rem;
+            font-weight: 500;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+
+        .bottom-nav-item.active {
+            color: #000;
+        }
+
+        .bottom-nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .bottom-nav-item.active .bottom-nav-icon {
+            filter: brightness(0);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .navbar {
+                display: none;
+                /* Hide top navbar on mobile */
+            }
+
+            .mobile-header {
+                display: flex;
+                /* Show mobile header */
+            }
+
+            .bottom-nav {
+                display: flex;
+                /* Show bottom nav on mobile */
+            }
+
+            body {
+                padding-top: 70px;
+                /* Space for mobile header */
+                padding-bottom: 80px;
+                /* Space for bottom nav */
+            }
+
+            .navbar-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-links {
+                margin-top: 15px;
+                flex-wrap: wrap;
+                gap: 15px;
+                width: 100%;
+            }
+
+            .nav-link {
+                font-size: 0.9rem;
+            }
+
+            .kpi-value {
+                font-size: 1.8rem;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .combobox-input {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Veriler Analiz Ediliyor...</div>
+    </div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <a href="/" class="mobile-brand">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Polimetri" class="mobile-logo-img">
+            Polimetri
+        </a>
+        <a href="/account" class="user-icon-link">
+            <img src="{{ url_for('static', filename='images/topNaviUser.svg') }}" alt="User" width="20" height="20">
+        </a>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Polimetri"
+                    class="navbar-logo-img" />
+                Polimetri
+            </a>
+            <div class="nav-links">
+                <a href="/report" class="nav-link" style="color: #000;">Rapor</a>
+                <a href="/all-posts" class="nav-link">Tüm Gönderiler</a>
+                <a href="/mayors" class="nav-link">Belediye Başkanları</a>
+                <a href="/axioms" class="nav-link">Yapay Zeka Aksiyomları</a>
+
+                <!-- User Icon (Desktop) -->
+                <a href="/account" class="user-icon-link" title="Hesabım">
+                    <img src="{{ url_for('static', filename='images/topNaviUser.svg') }}" alt="User" width="20"
+                        height="20">
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Header / Combobox Area -->
+        <div class="row">
+            <div class="col-12">
+                <div class="combobox-container">
+                    <label class="combobox-label">Kullanıcı Seç-></label>
+                    <div class="combobox-input-wrapper" id="comboboxWrapper">
+                        <!-- Input Field -->
+                        <input type="text" class="combobox-input" id="comboboxInput" placeholder="İsim ara..."
+                            value="{{ selected_name }}" autocomplete="off" />
+
+                        <!-- City Badge -->
+                        <span class="combobox-badge">{{ city }}</span>
+
+                        <!-- Chevron -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-chevron-down combobox-chevron" id="comboboxChevron" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+                        </svg>
+                    </div>
+
+                    <!-- Dropdown List -->
+                    <div class="combobox-dropdown" id="comboboxDropdown">
+                        {% for name in names %}
+                        <a href="/report?name={{ name }}"
+                            class="combobox-item {% if name == selected_name %}selected{% endif %}">
+                            {{ name }}
+                            {% if name == selected_name %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-check2" viewBox="0 0 16 16">
+                                <path
+                                    d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
+                            </svg>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards Row -->
+        <div class="row g-4 mb-5">
+            {% for key, data in kpi_data.items() %}
+            <div class="col-md-3 col-sm-6">
+                <div class="kpi-card">
+                    <div class="kpi-title">{{ data.title }}</div>
+                    <!-- Icon -->
+                    <img src="{{ url_for('static', filename='images/' + data.icon) }}" class="kpi-icon" alt="icon" />
+
+                    <div class="kpi-value">{{ data.value }}</div>
+
+                    <div class="kpi-trend">
+                        {% if data.trend_direction == 'up' %}
+                        <span class="trend-up">
+                            ▲ {{ data.trend }}
+                        </span>
+                        {% else %}
+                        <span class="trend-down">
+                            ▼ {{ data.trend }}
+                        </span>
+                        {% endif %}
+                        <span class="trend-period">geçen ay</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Top Posts Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h5 class="mb-3 fw-bold" style="color: #333;">En Çok Etkileşim Alan Gönderiler</h5>
+            </div>
+            {% for post in top_posts %}
+            <div class="col-md-3 col-sm-6 mb-4">
+                <a href="{{ post.link }}" target="_blank" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
+                        <img src="{{ post.image }}" class="card-img-top" alt="Post Image"
+                            style="height: 360px; object-fit: cover;" />
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3" style="flex-grow: 1;">
+                                <p class="card-text text-muted small mb-2"
+                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    {{ post.caption }}
+                                </p>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <div class="d-flex gap-3">
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <img src="{{ url_for('static', filename='images/like.svg') }}" alt="like"
+                                            style="width: 16px; height: 16px; margin-right: 4px;" />
+                                        {{ post.likes }}
+                                    </div>
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <img src="{{ url_for('static', filename='images/comment.svg') }}" alt="comment"
+                                            style="width: 16px; height: 16px; margin-right: 4px;" />
+                                        {{ post.comments }}
+                                    </div>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.75rem;">
+                                    {{ post.date.split(' ')[0] }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Charts Section -->
+        <div class="row g-4">
+            <!-- Left Column (Orange Theme) -->
+            <div class="col-md-6">
+                <div class="row g-4">
+                    <!-- Chart A: Daily Trend -->
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-title">Günlük Beğeni Trendi</div>
+                            <div class="chart-container">
+                                <canvas id="chartA"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Chart B: Post Type Distribution -->
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-title">Gönderi Türüne Göre Beğeni</div>
+                            <div class="chart-container">
+                                <canvas id="chartB"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column (Green Theme) -->
+            <div class="col-md-6">
+                <div class="row g-4">
+                    <!-- Chart C: Hourly Analysis -->
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-title">Saat Aralıklarına Göre Beğeni</div>
+                            <div class="chart-container">
+                                <canvas id="chartC"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Chart D: Day of Week Analysis -->
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-title">Haftanın Günlerine Göre Beğeni</div>
+                            <div class="chart-container">
+                                <canvas id="chartD"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar (Mobile) -->
+    <div class="bottom-nav">
+        <a href="/report" class="bottom-nav-item active">
+            <img src="{{ url_for('static', filename='images/NaviRapor.svg') }}" class="bottom-nav-icon" alt="Rapor">
+            <span>Rapor</span>
+        </a>
+        <!-- Swapped Kişiler and Gönderiler -->
+        <a href="/all-posts" class="bottom-nav-item">
+            <img src="{{ url_for('static', filename='images/NaviGönderiler.svg') }}" class="bottom-nav-icon"
+                alt="Gönderiler">
+            <span>Gönderiler</span>
+        </a>
+        <a href="/mayors" class="bottom-nav-item">
+            <img src="{{ url_for('static', filename='images/NaviKisiler.svg') }}" class="bottom-nav-icon" alt="Kişiler">
+            <span>Kişiler</span>
+        </a>
+        <a href="/axioms" class="bottom-nav-item">
+            <img src="{{ url_for('static', filename='images/NaviAksiyomlar.svg') }}" class="bottom-nav-icon"
+                alt="Aksiyomlar">
+            <span>Aksiyomlar</span>
+        </a>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // --- Combobox Logic ---
+        const wrapper = document.getElementById('comboboxWrapper');
+        const input = document.getElementById('comboboxInput');
+        const dropdown = document.getElementById('comboboxDropdown');
+        const chevron = document.getElementById('comboboxChevron');
+        const items = document.querySelectorAll('.combobox-item');
+
+        wrapper.addEventListener('click', () => {
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            chevron.classList.toggle('open', !isVisible);
+            if (!isVisible) input.focus();
+        });
+
+        input.addEventListener('keyup', (e) => {
+            const value = e.target.value.toLowerCase();
+            items.forEach(item => {
+                const text = item.textContent.trim().toLowerCase();
+                if (text.includes(value)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            dropdown.style.display = 'block';
+            chevron.classList.add('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+                chevron.classList.remove('open');
+            }
+        });
+
+        // --- Loading Spinner Logic ---
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        // Show loading when clicking a combobox item
+        document.querySelectorAll('.combobox-item').forEach(item => {
+            item.addEventListener('click', () => {
+                showLoading();
+            });
+        });
+
+        // Trigger loading on nav clicks
+        document.querySelectorAll('.nav-link, .bottom-nav-item').forEach(link => {
+            link.addEventListener('click', function (e) {
+                // Don't show if clicking current page (report is /report)
+                if (!this.getAttribute('href').startsWith('/report')) {
+                    loadingOverlay.style.display = 'flex';
+                }
+            });
+        });
+
+        // --- Charts Logic ---
+        const chartData = {{ chart_data | tojson }};
+
+        if (chartData && Object.keys(chartData).length > 0) {
+
+            // Custom Tooltip Theme
+            const tooltipTheme = {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                titleColor: '#333',
+                bodyColor: '#666',
+                borderColor: '#ddd',
+                borderWidth: 1,
+                padding: 10,
+                displayColors: false,
+                titleFont: { family: 'Inter', size: 13, weight: '600' },
+                bodyFont: { family: 'Inter', size: 12 },
+                callbacks: {
+                    label: function (context) {
+                        return context.parsed.y;
+                    }
+                }
+            };
+
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Inter' } }
+                    },
+                    y: {
+                        grid: { color: '#f0f0f0' },
+                        ticks: { font: { family: 'Inter' } },
+                        beginAtZero: true
+                    }
+                }
+            };
+
+            // Helper: Generate Green Shades
+            function generateGreenShades(values) {
+                const max = Math.max(...values);
+                const min = Math.min(...values);
+                return values.map(v => {
+                    const ratio = max === min ? 0 : (v - min) / (max - min);
+                    // Base: 112, 171, 139. Darker: 90, 140, 110.
+                    const r = 112 - (ratio * 22);
+                    const g = 171 - (ratio * 31);
+                    const b = 139 - (ratio * 29);
+                    return `rgb(${r}, ${g}, ${b})`;
+                });
+            }
+
+            // Helper: Hover Effect
+            const hoverHandler = {
+                onHover: (event, activeElements, chart) => {
+                    if (!chart.data.datasets[0].originalBackgroundColor) {
+                        chart.data.datasets[0].originalBackgroundColor = [...chart.data.datasets[0].backgroundColor];
+                    }
+                    const originalColors = chart.data.datasets[0].originalBackgroundColor;
+
+                    if (activeElements.length > 0) {
+                        const activeIndex = activeElements[0].index;
+                        const newColors = originalColors.map((color, i) => {
+                            if (i !== activeIndex) {
+                                return color.replace('rgb', 'rgba').replace(')', ', 0.3)');
+                            }
+                            return color;
+                        });
+                        chart.data.datasets[0].backgroundColor = newColors;
+                    } else {
+                        chart.data.datasets[0].backgroundColor = originalColors;
+                    }
+                    chart.update('none');
+                }
+            };
+
+            // --- Scroll Triggered Animation Logic ---
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1 // Trigger when 10% visible
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const canvasId = entry.target.id;
+                        if (canvasId === 'chartA') initChartA();
+                        if (canvasId === 'chartB') initChartB();
+                        if (canvasId === 'chartC') initChartC();
+                        if (canvasId === 'chartD') initChartD();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('canvas').forEach(canvas => {
+                observer.observe(canvas);
+            });
+
+            // --- Chart Initialization Functions ---
+
+            function initChartA() {
+                const ctxA = document.getElementById('chartA').getContext('2d');
+                const gradientA = ctxA.createLinearGradient(0, 0, 0, 400);
+                gradientA.addColorStop(0, 'rgba(255, 107, 0, 0.5)');
+                gradientA.addColorStop(1, 'rgba(255, 107, 0, 0.0)');
+
+                new Chart(ctxA, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.chart_a.labels,
+                        datasets: [{
+                            label: 'Beğeni',
+                            data: chartData.chart_a.values,
+                            borderColor: '#ff6b00',
+                            backgroundColor: gradientA,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            pointHitRadius: 10,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            ...commonOptions.plugins,
+                            tooltip: {
+                                ...tooltipTheme,
+                                callbacks: {
+                                    title: (context) => context[0].label,
+                                    label: (context) => `Beğeni: ${context.parsed.y}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { ...commonOptions.scales.x, ticks: { maxTicksLimit: 4 } },
+                            y: commonOptions.scales.y
+                        }
+                    }
+                });
+            }
+
+            function initChartB() {
+                const ctxB = document.getElementById('chartB').getContext('2d');
+                new Chart(ctxB, {
+                    type: 'polarArea',
+                    data: {
+                        labels: chartData.chart_b.labels,
+                        datasets: [{
+                            data: chartData.chart_b.values,
+                            backgroundColor: [
+                                'rgba(255, 107, 0, 0.7)',
+                                'rgba(255, 165, 0, 0.7)',
+                                'rgba(255, 215, 0, 0.7)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right' },
+                            tooltip: {
+                                ...tooltipTheme,
+                                callbacks: {
+                                    label: function (context) {
+                                        return `Ortalama Beğeni: ${context.parsed.r}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                ticks: { display: false },
+                                grid: { color: '#f0f0f0' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initChartC() {
+                const ctxC = document.getElementById('chartC').getContext('2d');
+                const colorsC = generateGreenShades(chartData.chart_c.values);
+
+                new Chart(ctxC, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.chart_c.labels,
+                        datasets: [{
+                            label: 'Beğeni',
+                            data: chartData.chart_c.values,
+                            backgroundColor: colorsC,
+                            borderRadius: 5,
+                            originalBackgroundColor: colorsC
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        onHover: hoverHandler.onHover,
+                        animation: { duration: 400 },
+                        plugins: {
+                            ...commonOptions.plugins,
+                            tooltip: {
+                                ...tooltipTheme,
+                                callbacks: {
+                                    label: function (context) {
+                                        return `Ortalama Beğeni: ${context.parsed.y}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initChartD() {
+                const ctxD = document.getElementById('chartD').getContext('2d');
+                const colorsD = generateGreenShades(chartData.chart_d.values);
+
+                new Chart(ctxD, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.chart_d.labels,
+                        datasets: [{
+                            label: 'Beğeni',
+                            data: chartData.chart_d.values,
+                            backgroundColor: colorsD,
+                            borderRadius: 5,
+                            originalBackgroundColor: colorsD
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        onHover: hoverHandler.onHover,
+                        animation: { duration: 400 },
+                        plugins: {
+                            ...commonOptions.plugins,
+                            tooltip: {
+                                ...tooltipTheme,
+                                callbacks: {
+                                    label: function (context) {
+                                        return `Ortalama Beğeni: ${context.parsed.y}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
